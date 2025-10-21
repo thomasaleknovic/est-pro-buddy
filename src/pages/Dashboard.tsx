@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Plus, Search, LogOut, Loader2 } from "lucide-react";
+import { FileText, Plus, Search, LogOut, Loader2, UserCircle } from "lucide-react";
 import { User, Session } from "@supabase/supabase-js";
 
 interface Budget {
@@ -23,6 +25,9 @@ const Dashboard = () => {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [filteredBudgets, setFilteredBudgets] = useState<Budget[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [minValue, setMinValue] = useState<string>("");
+  const [maxValue, setMaxValue] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -58,17 +63,29 @@ const Dashboard = () => {
   }, [user]);
 
   useEffect(() => {
-    if (searchQuery.trim() === "") {
-      setFilteredBudgets(budgets);
-    } else {
-      const filtered = budgets.filter(
+    let filtered = budgets;
+
+    // Filter by search
+    if (searchQuery.trim() !== "") {
+      filtered = filtered.filter(
         (budget) =>
           budget.cliente_nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
           budget.cpf.includes(searchQuery)
       );
-      setFilteredBudgets(filtered);
     }
-  }, [searchQuery, budgets]);
+
+    // Filter by status
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((budget) => budget.status === statusFilter);
+    }
+
+    // Filter by value range
+    const min = minValue ? parseFloat(minValue) : 0;
+    const max = maxValue ? parseFloat(maxValue) : Infinity;
+    filtered = filtered.filter((budget) => budget.total >= min && budget.total <= max);
+
+    setFilteredBudgets(filtered);
+  }, [searchQuery, statusFilter, minValue, maxValue, budgets]);
 
   const fetchBudgets = async () => {
     setLoading(true);
@@ -149,18 +166,57 @@ const Dashboard = () => {
           </Link>
         </div>
 
-        {/* Search */}
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nome ou CPF..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
+        {/* Search and Filters */}
+        <Card className="shadow-card mb-6">
+          <CardContent className="pt-6">
+            <div className="grid md:grid-cols-4 gap-4">
+              <div className="md:col-span-2">
+                <Label className="text-sm text-muted-foreground mb-2 block">Buscar</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Nome ou CPF..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm text-muted-foreground mb-2 block">Status</Label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="draft">Rascunho</SelectItem>
+                    <SelectItem value="approved">Aprovado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-sm text-muted-foreground mb-2 block">Valor</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    placeholder="Min"
+                    value={minValue}
+                    onChange={(e) => setMinValue(e.target.value)}
+                    className="w-20"
+                  />
+                  <Input
+                    type="number"
+                    placeholder="Max"
+                    value={maxValue}
+                    onChange={(e) => setMaxValue(e.target.value)}
+                    className="w-20"
+                  />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Budgets Grid */}
         {filteredBudgets.length === 0 ? (

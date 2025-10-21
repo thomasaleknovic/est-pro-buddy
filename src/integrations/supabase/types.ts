@@ -18,28 +18,34 @@ export type Database = {
         Row: {
           budget_id: string
           created_at: string
+          desconto: number | null
           descricao: string
           id: string
           preco_unitario: number
           quantidade: number
+          tipo_desconto: string | null
           total: number
         }
         Insert: {
           budget_id: string
           created_at?: string
+          desconto?: number | null
           descricao: string
           id?: string
           preco_unitario: number
           quantidade?: number
+          tipo_desconto?: string | null
           total: number
         }
         Update: {
           budget_id?: string
           created_at?: string
+          desconto?: number | null
           descricao?: string
           id?: string
           preco_unitario?: number
           quantidade?: number
+          tipo_desconto?: string | null
           total?: number
         }
         Relationships: [
@@ -58,8 +64,10 @@ export type Database = {
           cliente_nome: string
           cpf: string
           created_at: string
+          desconto_total: number | null
           endereco: string
           forma_pagamento: string
+          frete: number | null
           id: string
           observacoes: string | null
           status: string
@@ -73,8 +81,10 @@ export type Database = {
           cliente_nome: string
           cpf: string
           created_at?: string
+          desconto_total?: number | null
           endereco: string
           forma_pagamento: string
+          frete?: number | null
           id?: string
           observacoes?: string | null
           status?: string
@@ -88,8 +98,10 @@ export type Database = {
           cliente_nome?: string
           cpf?: string
           created_at?: string
+          desconto_total?: number | null
           endereco?: string
           forma_pagamento?: string
+          frete?: number | null
           id?: string
           observacoes?: string | null
           status?: string
@@ -102,23 +114,38 @@ export type Database = {
       }
       profiles: {
         Row: {
+          cpf_cnpj: string | null
           created_at: string
+          email: string | null
+          endereco: string | null
           full_name: string | null
           id: string
+          logo_url: string | null
+          telefone: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          cpf_cnpj?: string | null
           created_at?: string
+          email?: string | null
+          endereco?: string | null
           full_name?: string | null
           id?: string
+          logo_url?: string | null
+          telefone?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          cpf_cnpj?: string | null
           created_at?: string
+          email?: string | null
+          endereco?: string | null
           full_name?: string | null
           id?: string
+          logo_url?: string | null
+          telefone?: string | null
           updated_at?: string
           user_id?: string
         }
