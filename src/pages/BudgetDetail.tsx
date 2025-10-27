@@ -310,7 +310,7 @@ const BudgetDetail = () => {
     // Logo à esquerda
     if (profile?.logo_url) {
       try {
-        doc.addImage(profile.logo_url, "PNG", 15, yPos, 40, 20);
+        doc.addImage(profile.logo_url, "PNG", 15, yPos, 80, 0);
       } catch (e) {
         console.error("Erro ao adicionar logo:", e);
       }
