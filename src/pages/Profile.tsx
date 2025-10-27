@@ -124,7 +124,7 @@ const Profile = () => {
       }
     }
 
-    const { error: uploadError, data } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from("logos")
       .upload(fileName, file, { upsert: true });
 
@@ -142,12 +142,28 @@ const Profile = () => {
       .from("logos")
       .getPublicUrl(fileName);
 
+    // Save to database immediately
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ logo_url: publicUrl })
+      .eq("user_id", user.id);
+
+    if (updateError) {
+      toast({
+        title: "Erro ao salvar logo",
+        description: updateError.message,
+        variant: "destructive",
+      });
+      setUploading(false);
+      return;
+    }
+
     setProfile({ ...profile, logo_url: publicUrl });
     setUploading(false);
     
     toast({
-      title: "Logo carregado!",
-      description: "Não esqueça de salvar as alterações.",
+      title: "Logo atualizado!",
+      description: "Seu logo foi salvo com sucesso.",
     });
   };
 
@@ -157,14 +173,29 @@ const Profile = () => {
     const fileName = profile.logo_url.split("/").pop();
     if (!fileName) return;
 
-    const { error } = await supabase.storage
+    const { error: deleteError } = await supabase.storage
       .from("logos")
       .remove([`${user.id}/${fileName}`]);
 
-    if (error) {
+    if (deleteError) {
       toast({
         title: "Erro ao remover logo",
-        description: error.message,
+        description: deleteError.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Save to database immediately
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ logo_url: null })
+      .eq("user_id", user.id);
+
+    if (updateError) {
+      toast({
+        title: "Erro ao atualizar perfil",
+        description: updateError.message,
         variant: "destructive",
       });
       return;
@@ -173,6 +204,7 @@ const Profile = () => {
     setProfile({ ...profile, logo_url: null });
     toast({
       title: "Logo removido!",
+      description: "Seu logo foi removido com sucesso.",
     });
   };
 
