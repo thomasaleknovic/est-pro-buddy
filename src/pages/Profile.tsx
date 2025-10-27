@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Loader2, Upload, X } from "lucide-react";
+import { AppHeader } from "@/components/AppHeader";
 import { User } from "@supabase/supabase-js";
 
 interface Profile {
@@ -185,16 +186,13 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
-      <header className="border-b bg-card/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
-          </Button>
-        </div>
-      </header>
+      <AppHeader />
 
       <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <Button variant="ghost" onClick={() => navigate("/dashboard")} className="mb-4">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar
+        </Button>
         <h2 className="text-3xl font-bold mb-8">Meu Perfil</h2>
 
         <form onSubmit={handleSave}>

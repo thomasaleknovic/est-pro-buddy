@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { z } from "zod";
+import { AppHeader } from "@/components/AppHeader";
 
 const budgetSchema = z.object({
   clienteNome: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
@@ -109,18 +110,14 @@ const CreateBudget = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
-      {/* Header */}
-      <header className="border-b bg-card/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
-          </Button>
-        </div>
-      </header>
+      <AppHeader />
 
       {/* Form */}
       <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <Button variant="ghost" onClick={() => navigate("/dashboard")} className="mb-4">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar
+        </Button>
         <h2 className="text-3xl font-bold mb-2">Novo Orçamento</h2>
         <p className="text-muted-foreground mb-8">Preencha os dados do cliente</p>
 

@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Plus, Download, Trash2, Loader2, Edit } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { AppHeader } from "@/components/AppHeader";
 
 interface Budget {
   id: string;
@@ -433,9 +434,11 @@ const BudgetDetail = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
-      {/* Header */}
-      <header className="border-b bg-card/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+      <AppHeader />
+
+      {/* Content */}
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="flex justify-between items-center mb-6">
           <Button variant="ghost" onClick={() => navigate("/dashboard")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar
@@ -451,10 +454,6 @@ const BudgetDetail = () => {
             </Button>
           </div>
         </div>
-      </header>
-
-      {/* Content */}
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
         <h2 className="text-3xl font-bold mb-8">Orçamento</h2>
 
         {/* Client Info */}
