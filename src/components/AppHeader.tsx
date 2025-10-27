@@ -17,7 +17,6 @@ interface Profile {
 }
 
 export const AppHeader = () => {
-  const [profile, setProfile] = useState<Profile | null>(null);
   const [userName, setUserName] = useState<string>("");
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -36,9 +35,8 @@ export const AppHeader = () => {
       .eq("user_id", user.id)
       .single();
 
-    if (data) {
-      setProfile(data);
-      setUserName(data.full_name || user.email?.split("@")[0] || "Usuário");
+    if (data && data.full_name) {
+      setUserName(data.full_name);
     } else {
       setUserName(user.email?.split("@")[0] || "Usuário");
     }
