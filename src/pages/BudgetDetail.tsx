@@ -189,6 +189,22 @@ const BudgetDetail = () => {
       return;
     }
 
+    // Fetch updated items to calculate new total
+    const { data: updatedItems } = await supabase
+      .from("budget_items")
+      .select("*")
+      .eq("budget_id", id);
+
+    if (updatedItems) {
+      const newTotal = calculateTotal(updatedItems, budget?.frete || 0);
+      
+      // Update budget total
+      await supabase
+        .from("budgets")
+        .update({ total: newTotal })
+        .eq("id", id);
+    }
+
     toast({
       title: "Item adicionado!",
     });
@@ -207,6 +223,9 @@ const BudgetDetail = () => {
     e.preventDefault();
     if (!id) return;
 
+    // Calculate new total with updated freight
+    const newTotal = calculateTotal(items, editData.frete);
+
     const { error } = await supabase
       .from("budgets")
       .update({
@@ -218,6 +237,7 @@ const BudgetDetail = () => {
         forma_pagamento: editData.forma_pagamento,
         observacoes: editData.observacoes,
         frete: editData.frete,
+        total: newTotal,
       })
       .eq("id", id);
 
@@ -253,6 +273,20 @@ const BudgetDetail = () => {
       });
       return;
     }
+
+    // Fetch updated items to calculate new total
+    const { data: updatedItems } = await supabase
+      .from("budget_items")
+      .select("*")
+      .eq("budget_id", id);
+
+    const newTotal = calculateTotal(updatedItems || [], budget?.frete || 0);
+    
+    // Update budget total
+    await supabase
+      .from("budgets")
+      .update({ total: newTotal })
+      .eq("id", id);
 
     toast({
       title: "Item removido!",
