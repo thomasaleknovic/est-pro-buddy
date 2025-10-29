@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, LogOut, UserCircle } from "lucide-react";
+import { FileText, LogOut, UserCircle, Moon, Sun } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,11 +18,14 @@ interface Profile {
 
 export const AppHeader = () => {
   const [userName, setUserName] = useState<string>("");
+  const [isDark, setIsDark] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     fetchProfile();
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    setIsDark(isDarkMode);
   }, []);
 
   const fetchProfile = async () => {
@@ -51,6 +54,18 @@ export const AppHeader = () => {
     navigate("/");
   };
 
+  const toggleDarkMode = () => {
+    const newIsDark = !isDark;
+    setIsDark(newIsDark);
+    if (newIsDark) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  };
+
   return (
     <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -64,7 +79,12 @@ export const AppHeader = () => {
           </span>
         </div>
         
-        <DropdownMenu>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={toggleDarkMode}>
+            {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </Button>
+          
+          <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
               <UserCircle className="h-5 w-5" />
@@ -86,6 +106,7 @@ export const AppHeader = () => {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
       </div>
     </header>
   );

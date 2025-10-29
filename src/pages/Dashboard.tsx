@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, Loader2, FileText } from "lucide-react";
+import { Plus, Search, Loader2, FileText, Trash2, CheckCircle } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { User, Session } from "@supabase/supabase-js";
 import { AppHeader } from "@/components/AppHeader";
 
@@ -120,6 +121,51 @@ const Dashboard = () => {
     return new Date(date).toLocaleDateString("pt-BR");
   };
 
+  const handleDeleteBudget = async (budgetId: string) => {
+    const { error } = await supabase.from("budgets").delete().eq("id", budgetId);
+
+    if (error) {
+      toast({
+        title: "Erro ao excluir orçamento",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Orçamento excluído",
+      description: "O orçamento foi removido com sucesso.",
+    });
+
+    fetchBudgets();
+  };
+
+  const handleToggleStatus = async (budgetId: string, currentStatus: string) => {
+    const newStatus = currentStatus === "draft" ? "approved" : "draft";
+
+    const { error } = await supabase
+      .from("budgets")
+      .update({ status: newStatus })
+      .eq("id", budgetId);
+
+    if (error) {
+      toast({
+        title: "Erro ao atualizar status",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Status atualizado",
+      description: `Orçamento marcado como ${newStatus === "approved" ? "aprovado" : "rascunho"}.`,
+    });
+
+    fetchBudgets();
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 flex items-center justify-center">
@@ -223,12 +269,58 @@ const Dashboard = () => {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredBudgets.map((budget) => (
-              <Link key={budget.id} to={`/budget/${budget.id}`}>
-                <Card className="shadow-card hover:shadow-elegant transition-shadow cursor-pointer">
-                  <CardHeader>
-                    <CardTitle className="text-lg">{budget.cliente_nome}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
+              <Card key={budget.id} className="shadow-card hover:shadow-elegant transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-start">
+                    <Link to={`/budget/${budget.id}`} className="flex-1">
+                      <CardTitle className="text-lg hover:text-primary transition-colors">
+                        {budget.cliente_nome}
+                      </CardTitle>
+                    </Link>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleToggleStatus(budget.id, budget.status);
+                        }}
+                        title={budget.status === "approved" ? "Marcar como rascunho" : "Marcar como aprovado"}
+                      >
+                        <CheckCircle className={`h-4 w-4 ${budget.status === "approved" ? "text-primary" : "text-muted-foreground"}`} />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={(e) => e.preventDefault()}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Tem certeza que deseja excluir este orçamento? Esta ação não pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteBudget(budget.id)}>
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <Link to={`/budget/${budget.id}`}>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">CPF:</span>
@@ -252,13 +344,13 @@ const Dashboard = () => {
                               : "bg-primary/10 text-primary"
                           }`}
                         >
-                          {budget.status === "draft" ? "Rascunho" : "Finalizado"}
+                          {budget.status === "draft" ? "Rascunho" : "Aprovado"}
                         </span>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </Link>
+                  </Link>
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}
