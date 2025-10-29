@@ -64,6 +64,7 @@ export type Database = {
           cliente_nome: string
           cpf: string
           created_at: string
+          deleted_at: string | null
           desconto_total: number | null
           endereco: string
           forma_pagamento: string
@@ -81,6 +82,7 @@ export type Database = {
           cliente_nome: string
           cpf: string
           created_at?: string
+          deleted_at?: string | null
           desconto_total?: number | null
           endereco: string
           forma_pagamento: string
@@ -98,6 +100,7 @@ export type Database = {
           cliente_nome?: string
           cpf?: string
           created_at?: string
+          deleted_at?: string | null
           desconto_total?: number | null
           endereco?: string
           forma_pagamento?: string
@@ -156,7 +159,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_old_deleted_budgets: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
