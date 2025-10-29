@@ -517,9 +517,9 @@ const BudgetDetail = () => {
                 <p className="text-sm text-muted-foreground">Endereço</p>
                 <p className="font-medium">{budget.endereco}</p>
               </div>
-              <div>
+              <div className="md:col-span-2">
                 <p className="text-sm text-muted-foreground">Forma de Pagamento</p>
-                <p className="font-medium capitalize">{budget.forma_pagamento.replace('-', ' ')}</p>
+                <p className="font-medium">{budget.forma_pagamento}</p>
               </div>
               {budget.observacoes && (
                 <div className="md:col-span-2">
@@ -737,27 +737,20 @@ const BudgetDetail = () => {
                   required
                 />
               </div>
-              <div className="space-y-2">
+              <div className="md:col-span-2 space-y-2">
                 <Label htmlFor="edit_forma_pagamento">Forma de Pagamento</Label>
-                <Select
+                <Textarea
+                  id="edit_forma_pagamento"
                   value={editData.forma_pagamento}
-                  onValueChange={(value) =>
-                    setEditData({ ...editData, forma_pagamento: value })
+                  onChange={(e) =>
+                    setEditData({ ...editData, forma_pagamento: e.target.value })
                   }
-                >
-                  <SelectTrigger id="edit_forma_pagamento">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                    <SelectItem value="pix">PIX</SelectItem>
-                    <SelectItem value="cartao-credito">Cartão de Crédito</SelectItem>
-                    <SelectItem value="cartao-debito">Cartão de Débito</SelectItem>
-                    <SelectItem value="boleto">Boleto</SelectItem>
-                  </SelectContent>
-                </Select>
+                  rows={3}
+                  placeholder="Ex: Dinheiro, PIX, Cartão de Crédito..."
+                  required
+                />
               </div>
-              <div className="space-y-2">
+              <div className="md:col-span-2 space-y-2">
                 <Label htmlFor="edit_frete">Frete (R$)</Label>
                 <Input
                   id="edit_frete"
