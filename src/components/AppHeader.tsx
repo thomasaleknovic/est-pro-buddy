@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, LogOut, UserCircle, Moon, Sun } from "lucide-react";
+import { LogOut, UserCircle, Moon, Sun } from "lucide-react";
+import logo from "@/assets/logo-estimas.svg";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -71,8 +72,7 @@ export const AppHeader = () => {
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/dashboard")}>
-            <FileText className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold">Orçamento Fácil</h1>
+            <img src={logo} alt="Estimas" className="h-8" />
           </div>
           <span className="text-sm text-muted-foreground hidden sm:inline">
             Olá, <span className="font-semibold text-foreground">{userName}</span>

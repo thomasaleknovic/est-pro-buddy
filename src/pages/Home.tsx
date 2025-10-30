@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { FileText, TrendingUp, Download, Users } from "lucide-react";
+import { FileText, TrendingUp, Download } from "lucide-react";
 import { Link } from "react-router-dom";
+import logo from "@/assets/logo-estimas.svg";
 
 const Home = () => {
   return (
@@ -9,8 +10,7 @@ const Home = () => {
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <FileText className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold">Orçamento Fácil</h1>
+            <img src={logo} alt="Estimas" className="h-8" />
           </div>
           <div className="flex gap-2">
             <Link to="/login">
@@ -86,7 +86,7 @@ const Home = () => {
       {/* Footer */}
       <footer className="border-t bg-card/50 mt-20">
         <div className="container mx-auto px-4 py-8 text-center text-muted-foreground">
-          <p>© 2025 Orçamento Fácil. Sistema de gestão de orçamentos.</p>
+          <p>© 2025 Estimas. Sistema de gestão de orçamentos.</p>
         </div>
       </footer>
     </div>
