@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, Loader2, FileText, Trash2, CheckCircle } from "lucide-react";
+import { Plus, Search, Loader2, FileText, Trash2, CheckCircle, RotateCcw } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { User, Session } from "@supabase/supabase-js";
 import { AppHeader } from "@/components/AppHeader";
@@ -19,13 +20,16 @@ interface Budget {
   status: string;
   total: number;
   created_at: string;
+  deleted_at: string | null;
 }
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [deletedBudgets, setDeletedBudgets] = useState<Budget[]>([]);
   const [filteredBudgets, setFilteredBudgets] = useState<Budget[]>([]);
+  const [filteredDeletedBudgets, setFilteredDeletedBudgets] = useState<Budget[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [minValue, setMinValue] = useState<string>("");
@@ -65,47 +69,74 @@ const Dashboard = () => {
   }, [user]);
 
   useEffect(() => {
-    let filtered = budgets;
+    const applyFilters = (budgetList: Budget[]) => {
+      let filtered = budgetList;
 
-    // Filter by search
-    if (searchQuery.trim() !== "") {
-      filtered = filtered.filter(
-        (budget) =>
-          budget.cliente_nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          budget.cpf.includes(searchQuery)
-      );
-    }
+      // Filter by search
+      if (searchQuery.trim() !== "") {
+        filtered = filtered.filter(
+          (budget) =>
+            budget.cliente_nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            budget.cpf.includes(searchQuery)
+        );
+      }
 
-    // Filter by status
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((budget) => budget.status === statusFilter);
-    }
+      // Filter by status
+      if (statusFilter !== "all") {
+        filtered = filtered.filter((budget) => budget.status === statusFilter);
+      }
 
-    // Filter by value range
-    const min = minValue ? parseFloat(minValue) : 0;
-    const max = maxValue ? parseFloat(maxValue) : Infinity;
-    filtered = filtered.filter((budget) => budget.total >= min && budget.total <= max);
+      // Filter by value range
+      const min = minValue ? parseFloat(minValue) : 0;
+      const max = maxValue ? parseFloat(maxValue) : Infinity;
+      filtered = filtered.filter((budget) => budget.total >= min && budget.total <= max);
 
-    setFilteredBudgets(filtered);
-  }, [searchQuery, statusFilter, minValue, maxValue, budgets]);
+      return filtered;
+    };
+
+    setFilteredBudgets(applyFilters(budgets));
+    setFilteredDeletedBudgets(applyFilters(deletedBudgets));
+  }, [searchQuery, statusFilter, minValue, maxValue, budgets, deletedBudgets]);
 
   const fetchBudgets = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    
+    // Fetch active budgets
+    const { data: activeBudgets, error: activeError } = await supabase
       .from("budgets")
       .select("*")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
-    if (error) {
+    // Fetch deleted budgets
+    const { data: trashBudgets, error: trashError } = await supabase
+      .from("budgets")
+      .select("*")
+      .not("deleted_at", "is", null)
+      .order("deleted_at", { ascending: false });
+
+    if (activeError) {
       toast({
         title: "Erro ao carregar orçamentos",
-        description: error.message,
+        description: activeError.message,
         variant: "destructive",
       });
     } else {
-      setBudgets(data || []);
-      setFilteredBudgets(data || []);
+      setBudgets(activeBudgets || []);
+      setFilteredBudgets(activeBudgets || []);
     }
+
+    if (trashError) {
+      toast({
+        title: "Erro ao carregar lixeira",
+        description: trashError.message,
+        variant: "destructive",
+      });
+    } else {
+      setDeletedBudgets(trashBudgets || []);
+      setFilteredDeletedBudgets(trashBudgets || []);
+    }
+    
     setLoading(false);
   };
 
@@ -122,11 +153,14 @@ const Dashboard = () => {
   };
 
   const handleDeleteBudget = async (budgetId: string) => {
-    const { error } = await supabase.from("budgets").delete().eq("id", budgetId);
+    const { error } = await supabase
+      .from("budgets")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", budgetId);
 
     if (error) {
       toast({
-        title: "Erro ao excluir orçamento",
+        title: "Erro ao mover para lixeira",
         description: error.message,
         variant: "destructive",
       });
@@ -134,8 +168,51 @@ const Dashboard = () => {
     }
 
     toast({
-      title: "Orçamento excluído",
-      description: "O orçamento foi removido com sucesso.",
+      title: "Orçamento movido para lixeira",
+      description: "O orçamento será excluído permanentemente após 30 dias.",
+    });
+
+    fetchBudgets();
+  };
+
+  const handleRestoreBudget = async (budgetId: string) => {
+    const { error } = await supabase
+      .from("budgets")
+      .update({ deleted_at: null })
+      .eq("id", budgetId);
+
+    if (error) {
+      toast({
+        title: "Erro ao restaurar orçamento",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Orçamento restaurado",
+      description: "O orçamento foi restaurado com sucesso.",
+    });
+
+    fetchBudgets();
+  };
+
+  const handlePermanentDelete = async (budgetId: string) => {
+    const { error } = await supabase.from("budgets").delete().eq("id", budgetId);
+
+    if (error) {
+      toast({
+        title: "Erro ao excluir permanentemente",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Orçamento excluído permanentemente",
+      description: "O orçamento foi removido definitivamente.",
     });
 
     fetchBudgets();
@@ -245,8 +322,20 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Budgets Grid */}
-        {filteredBudgets.length === 0 ? (
+        {/* Tabs for Active and Deleted Budgets */}
+        <Tabs defaultValue="active" className="w-full">
+          <TabsList className="mb-6">
+            <TabsTrigger value="active">
+              Ativos ({filteredBudgets.length})
+            </TabsTrigger>
+            <TabsTrigger value="deleted">
+              Lixeira ({filteredDeletedBudgets.length})
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Active Budgets Tab */}
+          <TabsContent value="active">
+            {filteredBudgets.length === 0 ? (
           <Card className="shadow-card">
             <CardContent className="py-12 text-center">
               <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -265,95 +354,192 @@ const Dashboard = () => {
                 </Link>
               )}
             </CardContent>
-          </Card>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredBudgets.map((budget) => (
-              <Card key={budget.id} className="shadow-card hover:shadow-elegant transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start">
-                    <Link to={`/budget/${budget.id}`} className="flex-1">
-                      <CardTitle className="text-lg hover:text-primary transition-colors">
-                        {budget.cliente_nome}
-                      </CardTitle>
-                    </Link>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleToggleStatus(budget.id, budget.status);
-                        }}
-                        title={budget.status === "approved" ? "Marcar como rascunho" : "Marcar como aprovado"}
-                      >
-                        <CheckCircle className={`h-4 w-4 ${budget.status === "approved" ? "text-primary" : "text-muted-foreground"}`} />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
+              </Card>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredBudgets.map((budget) => (
+                  <Card key={budget.id} className="shadow-card hover:shadow-elegant transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-start">
+                        <Link to={`/budget/${budget.id}`} className="flex-1">
+                          <CardTitle className="text-lg hover:text-primary transition-colors">
+                            {budget.cliente_nome}
+                          </CardTitle>
+                        </Link>
+                        <div className="flex gap-1">
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={(e) => e.preventDefault()}
+                            className="h-8 w-8"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleToggleStatus(budget.id, budget.status);
+                            }}
+                            title={budget.status === "approved" ? "Marcar como rascunho" : "Marcar como aprovado"}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <CheckCircle className={`h-4 w-4 ${budget.status === "approved" ? "text-primary" : "text-muted-foreground"}`} />
                           </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Tem certeza que deseja excluir este orçamento? Esta ação não pode ser desfeita.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDeleteBudget(budget.id)}>
-                              Excluir
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Link to={`/budget/${budget.id}`}>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">CPF:</span>
-                        <span className="font-medium">{budget.cpf}</span>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                onClick={(e) => e.preventDefault()}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Mover para lixeira?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  O orçamento será movido para a lixeira e excluído automaticamente após 30 dias.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteBudget(budget.id)}>
+                                  Mover para lixeira
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Total:</span>
-                        <span className="font-bold text-primary">
-                          {formatCurrency(budget.total)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Data:</span>
-                        <span>{formatDate(budget.created_at)}</span>
-                      </div>
-                      <div className="pt-2">
-                        <span
-                          className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                            budget.status === "draft"
-                              ? "bg-secondary text-secondary-foreground"
-                              : "bg-primary/10 text-primary"
-                          }`}
-                        >
-                          {budget.status === "draft" ? "Rascunho" : "Aprovado"}
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
+                    </CardHeader>
+                    <CardContent>
+                      <Link to={`/budget/${budget.id}`}>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">CPF:</span>
+                            <span className="font-medium">{budget.cpf}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Total:</span>
+                            <span className="font-bold text-primary">
+                              {formatCurrency(budget.total)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Data:</span>
+                            <span>{formatDate(budget.created_at)}</span>
+                          </div>
+                          <div className="pt-2">
+                            <span
+                              className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                                budget.status === "draft"
+                                  ? "bg-secondary text-secondary-foreground"
+                                  : "bg-primary/10 text-primary"
+                              }`}
+                            >
+                              {budget.status === "draft" ? "Rascunho" : "Aprovado"}
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Deleted Budgets Tab */}
+          <TabsContent value="deleted">
+            {filteredDeletedBudgets.length === 0 ? (
+              <Card className="shadow-card">
+                <CardContent className="py-12 text-center">
+                  <Trash2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Lixeira vazia</h3>
+                  <p className="text-muted-foreground">
+                    Nenhum orçamento na lixeira
+                  </p>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        )}
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredDeletedBudgets.map((budget) => {
+                  const deletedDate = budget.deleted_at ? new Date(budget.deleted_at) : null;
+                  const expirationDate = deletedDate ? new Date(deletedDate.getTime() + 30 * 24 * 60 * 60 * 1000) : null;
+                  const daysRemaining = expirationDate ? Math.ceil((expirationDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000)) : 0;
+
+                  return (
+                    <Card key={budget.id} className="shadow-card hover:shadow-elegant transition-shadow opacity-75">
+                      <CardHeader className="pb-3">
+                        <div className="flex justify-between items-start">
+                          <CardTitle className="text-lg">{budget.cliente_nome}</CardTitle>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleRestoreBudget(budget.id)}
+                              title="Restaurar orçamento"
+                            >
+                              <RotateCcw className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Excluir permanentemente?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Esta ação não pode ser desfeita. O orçamento será excluído permanentemente.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handlePermanentDelete(budget.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Excluir permanentemente
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">CPF:</span>
+                            <span className="font-medium">{budget.cpf}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Total:</span>
+                            <span className="font-bold text-primary">
+                              {formatCurrency(budget.total)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Excluído em:</span>
+                            <span>{deletedDate ? formatDate(budget.deleted_at!) : "-"}</span>
+                          </div>
+                          <div className="pt-2">
+                            <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-destructive/10 text-destructive">
+                              Expira em {daysRemaining} {daysRemaining === 1 ? 'dia' : 'dias'}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
