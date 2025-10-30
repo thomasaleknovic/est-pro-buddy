@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { LogOut, UserCircle, Moon, Sun } from "lucide-react";
-import logo from "@/assets/logo-estimas.svg";
+import logoWhite from "@/assets/logo-estimas.svg";
+import logoBlack from "@/assets/logo-estimas-black.svg";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -72,7 +73,8 @@ export const AppHeader = () => {
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/dashboard")}>
-            <img src={logo} alt="Estimas" className="h-8" />
+            <img src={logoBlack} alt="Estimas" className="h-8 dark:hidden" />
+            <img src={logoWhite} alt="Estimas" className="h-8 hidden dark:block" />
           </div>
           <span className="text-sm text-muted-foreground hidden sm:inline">
             Olá, <span className="font-semibold text-foreground">{userName}</span>

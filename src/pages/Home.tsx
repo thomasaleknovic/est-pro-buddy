@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { FileText, TrendingUp, Download } from "lucide-react";
 import { Link } from "react-router-dom";
-import logo from "@/assets/logo-estimas.svg";
+import logoWhite from "@/assets/logo-estimas.svg";
+import logoBlack from "@/assets/logo-estimas-black.svg";
 
 const Home = () => {
   return (
@@ -10,7 +11,8 @@ const Home = () => {
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <img src={logo} alt="Estimas" className="h-8" />
+            <img src={logoBlack} alt="Estimas" className="h-8 dark:hidden" />
+            <img src={logoWhite} alt="Estimas" className="h-8 hidden dark:block" />
           </div>
           <div className="flex gap-2">
             <Link to="/login">
