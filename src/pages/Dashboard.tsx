@@ -219,7 +219,15 @@ const Dashboard = () => {
   };
 
   const handleToggleStatus = async (budgetId: string, currentStatus: string) => {
-    const newStatus = currentStatus === "draft" ? "approved" : "draft";
+    // Cycle through statuses: draft -> sent -> approved -> draft
+    let newStatus: string;
+    if (currentStatus === "draft") {
+      newStatus = "sent";
+    } else if (currentStatus === "sent") {
+      newStatus = "approved";
+    } else {
+      newStatus = "draft";
+    }
 
     const { error } = await supabase
       .from("budgets")
@@ -235,9 +243,15 @@ const Dashboard = () => {
       return;
     }
 
+    const statusLabels = {
+      draft: "rascunho",
+      sent: "enviado",
+      approved: "aprovado"
+    };
+
     toast({
       title: "Status atualizado",
-      description: `Orçamento marcado como ${newStatus === "approved" ? "aprovado" : "rascunho"}.`,
+      description: `Orçamento marcado como ${statusLabels[newStatus as keyof typeof statusLabels]}.`,
     });
 
     fetchBudgets();
@@ -292,11 +306,12 @@ const Dashboard = () => {
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="draft">Rascunho</SelectItem>
-                    <SelectItem value="approved">Aprovado</SelectItem>
-                  </SelectContent>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="draft">Rascunho</SelectItem>
+                <SelectItem value="sent">Enviado</SelectItem>
+                <SelectItem value="approved">Aprovado</SelectItem>
+              </SelectContent>
                 </Select>
               </div>
               <div>
@@ -429,10 +444,16 @@ const Dashboard = () => {
                               className={`inline-block px-2 py-1 rounded text-xs font-medium ${
                                 budget.status === "draft"
                                   ? "bg-secondary text-secondary-foreground"
+                                  : budget.status === "sent"
+                                  ? "bg-blue-500/10 text-blue-500"
                                   : "bg-primary/10 text-primary"
                               }`}
                             >
-                              {budget.status === "draft" ? "Rascunho" : "Aprovado"}
+                              {budget.status === "draft" 
+                                ? "Rascunho" 
+                                : budget.status === "sent"
+                                ? "Enviado"
+                                : "Aprovado"}
                             </span>
                           </div>
                         </div>

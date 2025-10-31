@@ -5,9 +5,10 @@ import { AppHeader } from "@/components/AppHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { Loader2, TrendingUp, FileText, DollarSign, Calendar } from "lucide-react";
-import { startOfWeek, startOfMonth, startOfYear, endOfWeek, endOfMonth, endOfYear, subDays, subWeeks, subMonths, subYears, format, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, eachYearOfInterval } from "date-fns";
+import { Loader2, TrendingUp, FileText, DollarSign } from "lucide-react";
+import { startOfWeek, startOfMonth, startOfYear, endOfWeek, endOfMonth, endOfYear, subDays, subWeeks, subMonths, subYears, format, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, eachYearOfInterval, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Period = "day" | "week" | "month" | "year";
 
@@ -23,6 +24,7 @@ const Analytics = () => {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<Period>("month");
   const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [selectedMonth, setSelectedMonth] = useState<string>(format(new Date(), "yyyy-MM"));
 
   useEffect(() => {
     checkUser();
@@ -30,7 +32,7 @@ const Analytics = () => {
 
   useEffect(() => {
     fetchBudgets();
-  }, [period]);
+  }, [period, selectedMonth]);
 
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -48,10 +50,16 @@ const Analytics = () => {
 
     switch (period) {
       case "day":
-        start = subDays(now, 30);
+        // For days, use selected month
+        const monthDate = new Date(selectedMonth);
+        start = startOfMonth(monthDate);
+        end = endOfMonth(monthDate);
         break;
       case "week":
-        start = subWeeks(now, 12);
+        // For weeks, use selected month
+        const weekMonthDate = new Date(selectedMonth);
+        start = startOfMonth(weekMonthDate);
+        end = endOfMonth(weekMonthDate);
         break;
       case "month":
         start = subMonths(now, 12);
@@ -172,8 +180,14 @@ const Analytics = () => {
       return acc;
     }, {} as Record<string, number>);
 
+    const statusMap: Record<string, string> = {
+      draft: "Rascunho",
+      approved: "Aprovado",
+      sent: "Enviado"
+    };
+
     return Object.entries(statusCount).map(([status, count]) => ({
-      name: status === "draft" ? "Rascunho" : "Aprovado",
+      name: statusMap[status] || status,
       value: count,
     }));
   };
@@ -183,6 +197,20 @@ const Analytics = () => {
   const getTotalCount = () => budgets.length;
 
   const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))"];
+
+  // Generate month options for the selector
+  const generateMonthOptions = () => {
+    const months = [];
+    const today = new Date();
+    for (let i = 0; i < 24; i++) {
+      const date = subMonths(today, i);
+      months.push({
+        value: format(date, "yyyy-MM"),
+        label: format(date, "MMMM 'de' yyyy", { locale: ptBR })
+      });
+    }
+    return months;
+  };
 
   if (loading) {
     return (
@@ -194,25 +222,42 @@ const Analytics = () => {
 
   const chartData = getChartData();
   const statusData = getStatusData();
+  const monthOptions = generateMonthOptions();
 
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
       <main className="container mx-auto px-4 py-8">
         <div className="flex flex-col gap-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold">Analytics</h1>
               <p className="text-muted-foreground">Visualize o desempenho dos seus orçamentos</p>
             </div>
-            <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)}>
-              <TabsList>
-                <TabsTrigger value="day">Dias</TabsTrigger>
-                <TabsTrigger value="week">Semanas</TabsTrigger>
-                <TabsTrigger value="month">Meses</TabsTrigger>
-                <TabsTrigger value="year">Anos</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="flex flex-col sm:flex-row gap-2">
+              {(period === "day" || period === "week") && (
+                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Selecione o mês" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {monthOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)}>
+                <TabsList>
+                  <TabsTrigger value="day">Dias</TabsTrigger>
+                  <TabsTrigger value="week">Semanas</TabsTrigger>
+                  <TabsTrigger value="month">Meses</TabsTrigger>
+                  <TabsTrigger value="year">Anos</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
