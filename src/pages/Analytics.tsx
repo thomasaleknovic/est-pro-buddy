@@ -29,10 +29,8 @@ const Analytics = () => {
   }, []);
 
   useEffect(() => {
-    if (!loading) {
-      fetchBudgets();
-    }
-  }, [period, loading]);
+    fetchBudgets();
+  }, [period]);
 
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -40,7 +38,7 @@ const Analytics = () => {
       navigate("/login");
       return;
     }
-    setLoading(false);
+    await fetchBudgets();
   };
 
   const getDateRange = () => {
