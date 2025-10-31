@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, UserCircle, Moon, Sun } from "lucide-react";
+import { LogOut, UserCircle, Moon, Sun, FileText, Plus, BarChart3 } from "lucide-react";
 import logoWhite from "@/assets/logo-estimas.svg";
 import logoBlack from "@/assets/logo-estimas-black.svg";
 import {
@@ -76,9 +76,26 @@ export const AppHeader = () => {
             <img src={logoBlack} alt="Estimas" className="h-8 dark:hidden" />
             <img src={logoWhite} alt="Estimas" className="h-8 hidden dark:block" />
           </div>
-          <span className="text-sm text-muted-foreground hidden sm:inline">
-            Olá, <span className="font-semibold text-foreground">{userName}</span>
-          </span>
+          <nav className="hidden md:flex items-center gap-2">
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/dashboard" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Orçamentos
+              </Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/analytics" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Analytics
+              </Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/budget/new" className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Novo
+              </Link>
+            </Button>
+          </nav>
         </div>
         
         <div className="flex items-center gap-2">
